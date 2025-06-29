@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+  <style>
+    body { 
+      margin: 0; 
+      overflow: hidden; 
+      background: #000;
+      cursor: none;
+    }
+    #info {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      color: rgba(255,255,255,0.7);
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="info">移动鼠标改变粒子形态 · 点击切换颜色模式</div>
+  <script>
+    let t = 0;
+    let colorModeHSB = true;
+    let mouseX = 0;
+    let mouseY = 0;
+    let particlesCount = 10000;
+    let trailEffect = 0.2; // 拖尾效果强度
+    
+    function setup() {
+      createCanvas(windowWidth, windowHeight);
+      pixelDensity(1);
+      background(0);
+      noCursor();
+    }
+    
+    function draw() {
+      // 半透明背景创造拖尾效果
+      if (mouseIsPressed) {
+        background(0, 5);
+        trailEffect = 0.5;
+      } else {
+        background(0, trailEffect * 255);
+        trailEffect = max(0.1, trailEffect - 0.005);
+      }
+      
+      t += PI / 45;
+      
+      // 鼠标交互影响动画参数
+      const mouseFactorX = map(mouseX, 0, width, 0.8, 1.2);
+      const mouseFactorY = map(mouseY, 0, height, 0.8, 1.2);
+      
+      // 绘制粒子
+      for (let i = particlesCount; i--;) {
+        a(i % 200, i / 55, mouseFactorX, mouseFactorY);
+      }
+      
+      // 绘制自定义光标
+      drawCustomCursor();
+    }
+    
+    function a(x, y, mouseXFactor, mouseYFactor) {
+      // 鼠标位置影响参数
+      const k = 9 * cos(x / (8 * mouseXFactor));
+      const e = y / (8 * mouseYFactor) - 12.5;
+      const d = mag(k, e) ** 2 / 99 + sin(t * mouseXFactor) / 6 + 0.5;
+      const c = d / 2 + e / 69 - t / 16;
+      const q = 99 - e * sin(atan2(k, e) * 7) / d + k * (3 + cos(d * d - t * mouseYFactor) * 2);
+      
+      // 动态颜色计算
+      let hue, saturation, brightness;
+      
+      if (colorModeHSB) {
+        hue = (t * 20 + x + y) % 360;
+        saturation = 80 + sin(t * 2 + x) * 20;
+        brightness = 80 + cos(t * 3 + y) * 20;
+        colorMode(HSB, 360, 100, 100);
+      } else {
+        const r = 150 + 105 * sin(t * 0.5 + x * 0.01);
+        const g = 150 + 105 * sin(t * 0.7 + y * 0.01);
+        const b = 150 + 105 * sin(t * 0.9 + (x + y) * 0.01);
+        colorMode(RGB, 255, 255, 255);
+        fill(r, g, b);
+      }
+      
+      // 粒子大小根据位置和鼠标距离变化
+      const particleSize = map(
+        dist(mouseX, mouseY, width/2, height/2), 
+        0, width/2, 
+        3, 1
+      );
+      
+      noStroke();
+      if (colorModeHSB) {
+        fill(hue, saturation, brightness);
+      }
+      
+      // 绘制粒子
+      circle(
+        q * sin(c) + width / 2,
+        (q + 19 * d) * cos(c) + height / 2,
+        particleSize
+      );
+    }
+    
+    function drawCustomCursor() {
+      push();
+      noStroke();
+      fill(255, 150);
+      circle(mouseX, mouseY, 20);
+      fill(255, 50);
+      circle(mouseX, mouseY, 40);
+      pop();
+    }
+    
+    function mouseMoved() {
+      // 更新鼠标位置
+      mouseX = mouseX;
+      mouseY = mouseY;
+    }
+    
+    function mouseClicked() {
+      // 点击切换颜色模式
+      colorModeHSB = !colorModeHSB;
+    }
+    
+    function windowResized() {
+      resizeCanvas(windowWidth, windowHeight);
+    }
+    
+    function keyPressed() {
+      // 按键调整粒子数量
+      if (key === '+' && particlesCount < 30000) {
+        particlesCount += 1000;
+      } else if (key === '-' && particlesCount > 1000) {
+        particlesCount -= 1000;
+      }
+    }
+  </script>
+</body>
+</html>
